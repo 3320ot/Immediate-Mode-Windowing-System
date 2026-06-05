@@ -1,6 +1,7 @@
 #include "ch32v00x.h"
 #include "ST7789.h"
 #include "spi.h"
+#include "ssd1306/font5x8.h"
 
 Window windows[MAX_WINDOWS];
 
@@ -207,19 +208,46 @@ void ST7789_Add_Window(
 void ST7789_InsertText5x8(uint8_t idx, char* text, uint32_t color){
     GPIO_ResetBits(GPIOD, DC);
     SD_LowSpeed();
-    ST7789_SetWindow(windows[idx].offsetX+6, windows[idx].offsetY+6, 
-        windows[idx].offsetX1-7, windows[idx].offsetY1-7);
+    ST7789_SetWindow(windows[idx].offsetX+8, windows[idx].offsetY+8, 
+        windows[idx].offsetX1-9, windows[idx].offsetY1-9);
     SD_HighSpeed();
     GPIO_SetBits(GPIOD, DC);
-    uint16_t w = windows[idx].offsetX1-windows[idx].offsetX;
-    uint16_t h = windows[idx].offsetY1-windows[idx].offsetY;
+    uint16_t w = windows[idx].offsetX1-windows[idx].offsetX-16;
+    uint16_t h = windows[idx].offsetY1-windows[idx].offsetY-16;
 
-    uint8_t len = 0;
+    uint16_t len = 0;
     while(text[len]) len++;
-    uint8_t max_len = w/len;
-    for (uint8_t pix; pix < w; pix++) {
-        
+    uint16_t max_len_in_line = w/5;
+    uint16_t text_lines = len>max_len_in_line ? len/max_len_in_line : 1;
+    uint16_t current_line = 0;
+    printf("%d\n", len);
+    printf("%d\n", max_len_in_line);
+    printf("%d\n", text_lines);
+    for (uint16_t y = 0; y < text_lines*8; y++){
+        current_line = y/8;
+        for (uint16_t pix = 0; pix < w; pix++) {
+            uint8_t char_in_line = pix/5;
+            uint8_t pix_in_char = pix%5;
+            if (((font5x8[text[char_in_line+(current_line*max_len_in_line)]-32][pix_in_char] >> y%8) & 1) &&
+                (char_in_line<len)
+            ){
+                while (!(SPI1->STATR & SPI_I2S_FLAG_TXE));
+                SPI1->DATAR = color >> 8;
+                while (!(SPI1->STATR & SPI_I2S_FLAG_TXE));
+                SPI1->DATAR = color >> 16;
+                while (!(SPI1->STATR & SPI_I2S_FLAG_TXE));
+                SPI1->DATAR = color & 0xFF;
+            } else {
+                while (!(SPI1->STATR & SPI_I2S_FLAG_TXE));
+                SPI1->DATAR = windows[idx].bkg >> 8;
+                while (!(SPI1->STATR & SPI_I2S_FLAG_TXE));
+                SPI1->DATAR = windows[idx].bkg >> 16;
+                while (!(SPI1->STATR & SPI_I2S_FLAG_TXE));
+                SPI1->DATAR = windows[idx].bkg & 0xFF;
+            }
+        }
     }
+    while (SPI_I2S_GetFlagStatus(SPI1, SPI_I2S_FLAG_BSY));
 }
 
 void ST7789_Init(){

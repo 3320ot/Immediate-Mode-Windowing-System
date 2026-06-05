@@ -4,7 +4,7 @@
 #define THRESHOLD_BITS   76800UL
 #define BUFFER_SIZE      40
 
-#define MAX_WINDOWS 20
+#define MAX_WINDOWS      20
 
 typedef struct {
     uint16_t offsetX;

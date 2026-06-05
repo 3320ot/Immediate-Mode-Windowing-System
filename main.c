@@ -53,23 +53,24 @@ int main(void)
 
     OLED_init();
     OLED_setpos(0, 0);
-    OLED_println("Check data:", 0);
-    OLED_println("EMPTY", 0);
+    OLED_println("SSD1306 Initialized", 0);
+    OLED_println("ST7789 Initialization...", 0);
     
     ST7789_Init();      
 
     OLED_clear();
     int color = 0;
     ST7789_FillQuickTest(rgb_to_rgb888(0, 0, 0));
-    ST7789_Add_Window(20, 20, 120, 120, rgb_to_rgb888(255, 255,255), rgb_to_rgb888(160, 120, 160), 0);
-    ST7789_Add_Window(20, 130, 239, 222, rgb_to_rgb888(7, 172,24), rgb_to_rgb888(160, 120, 160), 1);
-    Delay_Ms(3000);
+    ST7789_Add_Window(20, 20, 120, 120, rgb_to_rgb888(255, 255,255), rgb_to_rgb888(20, 20, 20), 0);
+    ST7789_Add_Window(20, 130, 239, 222, rgb_to_rgb888(7, 172,24), rgb_to_rgb888(160, 0, 160), 1);
+    ST7789_InsertText5x8(0, "FAT CAT",
+    rgb_to_rgb888(160, 220, 0));
+    ST7789_InsertText5x8(1, "CH32V003 series is an industrial-grade general-purpose microcontroller designed based on QingKe RISC-V2A core, which supports 48MHz system main frequency in the product function. The series features wide voltage,single-wire serial debug interface, low-power consumption and ultra-small package. ", 
+        rgb_to_rgb888(255, 255, 255));
 
     while(1) {
-        ST7789_FillQuickTest(rgb_to_rgb888(color, 255-color, color*0.8));
+        // ST7789_FillQuickTest(rgb_to_rgb888(color, 255-color, color*0.8));
         color = (color < 255) ? (color + 10) : 0;
-        if(!color)
-            printf("STOP\n");
         if (i2c_send_request) {
             OLED_setpos(20, 20);
             OLED_printS("FAKE_RTC:", 0);
