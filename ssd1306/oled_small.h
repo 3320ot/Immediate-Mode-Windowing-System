@@ -19,7 +19,7 @@ extern "C" {
 
 #include "i2c_tx.h"
 #include <stdbool.h>
-#include "font5x8.h"
+#include "fonts/font5x8.h"
   
 // SSD1306 OLED height in pixels
 #ifndef SSD1306_HEIGHT

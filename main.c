@@ -1,10 +1,27 @@
 #include "debug.h"
 #include "ssd1306/oled_small.h"
 #include "ST7789/ST7789.h"
+#include "gui/ui.h"
 
 volatile uint16_t systick_counter = 0;
 volatile uint8_t i2c_send_request = 0;
 char RxData[6];
+
+Font FONT5x8 = {
+    .weight = 5,
+    .height = 8,
+    .idx = 0
+};
+Font FONT9x16 = {
+    .weight = 9,    
+    .height = 16,
+    .idx = 1 
+};
+Font FONT11x16 = {
+    .weight = 11,    
+    .height = 16,
+    .idx = 2 
+};
 
 void TIM2_Init(void) {
     RCC->APB1PCENR |= RCC_TIM2EN;
@@ -56,21 +73,35 @@ int main(void)
     OLED_println("SSD1306 Initialized", 0);
     OLED_println("ST7789 Initialization...", 0);
     
-    ST7789_Init();      
+    ST7789_Init();     
+    OLED_clear(); 
+    ST7789_Clear();
+    
+    Offsets offsets = {
+        0, 0, 32, 239
+    };
+    Offsets offsets1 = {
+        42, 10, 230, 115
+    };
+    Offsets offset2 = {
+        42, 125, 230, 230
+    };
 
-    OLED_clear();
-    int color = 0;
-    ST7789_FillQuickTest(rgb_to_rgb888(0, 0, 0));
-    ST7789_Add_Window(20, 20, 120, 120, rgb_to_rgb888(255, 255,255), rgb_to_rgb888(20, 20, 20), 0);
-    ST7789_Add_Window(20, 130, 239, 222, rgb_to_rgb888(7, 172,24), rgb_to_rgb888(160, 0, 160), 1);
-    ST7789_InsertText5x8(0, "FAT CAT",
-    rgb_to_rgb888(160, 220, 0));
-    ST7789_InsertText5x8(1, "CH32V003 series is an industrial-grade general-purpose microcontroller designed based on QingKe RISC-V2A core, which supports 48MHz system main frequency in the product function. The series features wide voltage,single-wire serial debug interface, low-power consumption and ultra-small package. ", 
-        rgb_to_rgb888(255, 255, 255));
+    ST7789_Add_Window(0, offsets, rgb888_to_rgb565(255, 255, 255), rgb888_to_rgb565(20, 20, 20), 6);
+    ST7789_Add_Window(1, offsets1, rgb888_to_rgb565(7, 24, 24), rgb888_to_rgb565(160, 0, 160), 4);
+    ST7789_Add_Window(2, offset2, rgb888_to_rgb565(249, 24, 24), rgb888_to_rgb565(220, 220, 220), 4);
+    
+    ST7789_InsertText(0, "FAT CAT",
+        rgb888_to_rgb565(255, 0, 0), 
+        10, FONT11x16);
+    ST7789_InsertText(1, "CH32V003 series is an industrial-grade general-purpose microcontroller designed based on QingKe RISC-V2A core, which supports 48MHz system main frequency in the product function. The series features wide voltage,single-wire serial debug interface, low-power consumption and ultra-small package. ", 
+        rgb888_to_rgb565(235, 235, 0), 
+        10, FONT5x8);
+    ST7789_InsertText(2, "blank",
+        rgb888_to_rgb565(255, 0, 0), 
+        10, FONT9x16);
 
     while(1) {
-        // ST7789_FillQuickTest(rgb_to_rgb888(color, 255-color, color*0.8));
-        color = (color < 255) ? (color + 10) : 0;
         if (i2c_send_request) {
             OLED_setpos(20, 20);
             OLED_printS("FAKE_RTC:", 0);

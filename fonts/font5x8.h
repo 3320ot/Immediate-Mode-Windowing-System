@@ -1,3 +1,6 @@
+#ifndef font5x8_h
+#define font5x8_h
+
 // lookup table for all of the ascii characters
 static const uint8_t font5x8[96][5] = {
  {0x00, 0x00, 0x00, 0x00, 0x00} // 20  (space)
@@ -97,3 +100,5 @@ static const uint8_t font5x8[96][5] = {
 ,{0x10, 0x08, 0x08, 0x10, 0x08} // 7e ~
 ,{0x00, 0x06, 0x09, 0x09, 0x06} // 7f ?
 }; // end char ASCII[96][5]
+
+#endif
