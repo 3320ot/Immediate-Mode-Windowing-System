@@ -2,6 +2,46 @@
 #include "ST7789.h"
 #include "spi.h"
 
+void ST7789_BLK_Init() {
+    RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOD | RCC_APB2Periph_AFIO, ENABLE);
+    RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM2, ENABLE);
+
+    GPIO_InitTypeDef GPIO_InitStructure = {0};
+    GPIO_InitStructure.GPIO_Pin = BGR;
+    GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF_PP;
+    GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
+    GPIO_Init(GPIOD, &GPIO_InitStructure);
+
+    TIM_Cmd(TIM2, DISABLE);
+    TIM_OCInitTypeDef TIM_OCInitStructure = {0};
+    TIM_TimeBaseInitTypeDef TIM_TimeBaseInitStructure = {0};
+
+    TIM_TimeBaseInitStructure.TIM_Period = 999;
+    TIM_TimeBaseInitStructure.TIM_Prescaler = 47;
+    TIM_TimeBaseInitStructure.TIM_ClockDivision = TIM_CKD_DIV1;
+    TIM_TimeBaseInitStructure.TIM_CounterMode = TIM_CounterMode_Up;
+
+    TIM_TimeBaseInit(TIM2, &TIM_TimeBaseInitStructure);
+
+    TIM_OCInitStructure.TIM_OCMode = TIM_OCMode_PWM1;
+    TIM_OCInitStructure.TIM_OutputState = TIM_OutputState_Enable;
+    TIM_OCInitStructure.TIM_Pulse = 999;
+    TIM_OCInitStructure.TIM_OCPolarity = TIM_OCPolarity_High;
+    TIM_OC2Init(TIM2, &TIM_OCInitStructure);
+
+    TIM_CCxCmd(TIM2, TIM_Channel_2, TIM_CCx_Enable);
+    TIM_OC2PreloadConfig(TIM2, TIM_OCPreload_Enable);
+    TIM_ARRPreloadConfig(TIM2, ENABLE);
+    TIM_Cmd(TIM2, ENABLE);
+}
+
+void ST7789_SetBrightness(uint16_t brightness){
+    TIM2->PSC = 47;
+    TIM2->ATRLR = 999;
+    TIM2->CH2CVR = brightness;
+    TIM_GenerateEvent(TIM2, TIM_EventSource_Update);
+}
+
 void ST7789_WriteCmd(uint8_t cmd) {
     GPIOD->BCR = DC;
     while (!SPI_I2S_GetFlagStatus(SPI1, SPI_I2S_FLAG_TXE));
@@ -23,7 +63,7 @@ void ST7789_SetConfig(){
     ST7789_WriteCmd(0x13); Delay_Ms(10);   // NORON
 
     ST7789_WriteCmd(0x36); 
-    ST7789_WriteData(RGB | HORIZONTAL); // RGB
+    ST7789_WriteData(RGB | VERTICAL); // RGB
     ST7789_WriteCmd(0x3A); ST7789_WriteData(0x05); // COLMOD
 
     ST7789_WriteCmd(0xB2);  // Porch setting
@@ -141,5 +181,6 @@ void ST7789_Init(){
     SPI1_Init();
     ST7789_SetConfig();
     ST7789_SetWindow(0, 0, x-1, y-1);
+    ST7789_BLK_Init();
     SD_HighSpeed();
 }

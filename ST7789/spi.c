@@ -23,9 +23,9 @@ void SPI1_Init()
     SPI_InitTypeDef  SPI_InitStructure = {0};
 
     RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOC | 
-    RCC_APB2Periph_GPIOD  | 
-    RCC_APB2Periph_SPI1, 
-    ENABLE);
+        RCC_APB2Periph_GPIOD  | 
+        RCC_APB2Periph_SPI1, 
+        ENABLE);
 
     GPIO_InitStructure.GPIO_Pin = SCK | MOSI;
     GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF_PP;
@@ -37,12 +37,10 @@ void SPI1_Init()
     GPIO_InitStructure.GPIO_Speed = GPIO_Speed_30MHz;
     GPIO_Init(GPIOC, &GPIO_InitStructure);
 
-    GPIO_InitStructure.GPIO_Pin = DC | BLK;
+    GPIO_InitStructure.GPIO_Pin = DC;
     GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;
     GPIO_InitStructure.GPIO_Speed = GPIO_Speed_30MHz;
     GPIO_Init(GPIOD, &GPIO_InitStructure);
-
-    GPIO_SetBits(GPIOD, BLK);
 
     SPI_InitStructure.SPI_Direction = SPI_Direction_1Line_Tx;
     SPI_InitStructure.SPI_Mode = SPI_Mode_Master;

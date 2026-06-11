@@ -24,6 +24,8 @@ void ST7789_SetConfig();
 
 void ST7789_SetOrienaion(uint8_t orienation, uint8_t format);
 
+void ST7789_SetBrightness(uint16_t brightness);
+
 void ST7789_SetWindow(uint16_t x1, uint16_t y1, uint16_t x2, uint16_t y2);
 
 void sendBuffer();

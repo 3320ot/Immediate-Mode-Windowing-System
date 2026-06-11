@@ -17,19 +17,46 @@ typedef struct {
 } Offsets;
 
 typedef struct {
-    Offsets window_offsets;
-    uint32_t bkg;
-    uint32_t col;
-    char *text;
-} Window;
-
-typedef struct {
     uint8_t weight;      
     uint8_t height;      
     uint8_t idx;   
 } Font;
 
+typedef struct {
+    uint16_t offset;
+    uint32_t color;
+    Font font;
+} TextConfig;
+
+typedef struct {
+    Offsets window_offsets;
+    uint32_t bkg;
+    uint32_t col;
+    char *text;
+    TextConfig config;
+} Window;
+
+static const Font FONT5x8 = {
+    .weight = 5,
+    .height = 8,
+    .idx = 0
+};
+static const Font FONT9x16 = {
+    .weight = 9,    
+    .height = 16,
+    .idx = 1 
+};
+static const Font FONT11x16 = {
+    .weight = 11,    
+    .height = 16,
+    .idx = 2 
+};
+
 void ST7789_InsertText(uint8_t idx, char* text, uint32_t color, uint8_t offset, Font font);
+
+void ST7789_ScrollText(uint8_t idx, uint16_t pos);
+
+void ST7789_ChangeText(uint8_t idx, char* text);
 
 void ST7789_RemoveWindow(uint8_t idx);
 
