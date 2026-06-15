@@ -23,12 +23,11 @@ int main(void)
     SystemCoreClockUpdate();
     Delay_Init();
     SDI_Printf_Enable();
+    Delay_Ms(100);
 
     printf("SystemClk:%d\r\n",SystemCoreClock);
     printf( "ChipID:%08x\r\n", DBGMCU_GetCHIPID());
-    Delay_Ms(1000);
-
-    DS1302_Init();
+    Delay_Ms(100);
     
     ST7789_Init();     
     ST7789_Clear();
@@ -61,12 +60,24 @@ int main(void)
     uint16_t b = 1000;
 
     ST7789_ChangeText(2, "Here was a text");
+
+    DS1302_Init();
     Delay_Ms(1000);
 
+    Time t = DS1302_GetTime();
+    char buffer[128];
+    const char* weekdays[] = {"Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"};
     while(1) {
+        t = DS1302_GetTime();
         pos = pos<8 ? pos+1 : 0;
-        b = b>0 ? b-25 : 1000;
+        b = b>0 ? b-10 : 1000;
         ST7789_ScrollText(1, pos);
         ST7789_SetBrightness(b);
+        sprintf(buffer, "%02d:%02d:%02d          %s               %02d.%02d.20%02d",
+                t.hour, t.minute, t.second,
+                weekdays[t.weekday - 1],
+                t.day, t.month, t.year);
+        printf(buffer);
+        ST7789_ChangeText(2, buffer);
     }
 }

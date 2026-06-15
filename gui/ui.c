@@ -7,298 +7,184 @@
 
 Window windows[MAX_WINDOWS];
 
+#define SPI_BUSY_WAIT() while (SPI_I2S_GetFlagStatus(SPI1, SPI_I2S_FLAG_BSY))
+#define SPI_TXE_WAIT()  while (!(SPI1->STATR & SPI_I2S_FLAG_TXE))
+
+static inline void spi_send_color(uint16_t color) {
+    SPI_TXE_WAIT();
+    SPI1->DATAR = color >> 8;
+    SPI_TXE_WAIT();
+    SPI1->DATAR = color & 0xFF;
+}
+
+static void fill_window(uint16_t w, uint16_t h, uint16_t color) {
+    for (uint32_t i = 0; i < (uint32_t)w * h; i++)
+        spi_send_color(color);
+    SPI_BUSY_WAIT();
+}
+
+static void set_window(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1) {
+    GPIO_ResetBits(GPIOD, DC);
+    SD_LowSpeed();
+    ST7789_SetWindow(x0, y0, x1, y1);
+    SD_HighSpeed();
+    GPIO_SetBits(GPIOD, DC);
+}
+
+static uint16_t get_font_pixel(uint8_t font_idx, uint8_t sym, uint8_t col, uint8_t row) {
+    switch (font_idx) {
+        case 0: return (uint16_t)(font5x8[sym][col] >> (row % 8));
+        case 1: return font9x16[sym][col] >> (row % 16);
+        case 2: return font11x16[sym][col] >> (row % 16);
+        default: return 0;
+    }
+}
+
 void ST7789_FillQuickTest(uint32_t color) {
     GPIO_SetBits(GPIOD, DC);
-    for(uint32_t i = 0; i < x*y; i++)
-    {
-        while (!(SPI1->STATR & SPI_I2S_FLAG_TXE));
-        SPI1->DATAR =  color >> 8;
-        while (!(SPI1->STATR & SPI_I2S_FLAG_TXE));
-        SPI1->DATAR = color & 0xFF;
-    }
-
-    while (SPI_I2S_GetFlagStatus(SPI1, SPI_I2S_FLAG_BSY));
+    fill_window(x, y, (uint16_t)color);
 }
 
-void ST7789_Clear() {
+void ST7789_Clear(void) {
     GPIO_SetBits(GPIOD, DC);
-    for(uint32_t i = 0; i < x*y; i++)
-    {
-        while (!(SPI1->STATR & SPI_I2S_FLAG_TXE));
-        SPI1->DATAR =  background_color >> 8;
-        while (!(SPI1->STATR & SPI_I2S_FLAG_TXE));
-        SPI1->DATAR = background_color & 0xFF;
-    }
-
-    while (SPI_I2S_GetFlagStatus(SPI1, SPI_I2S_FLAG_BSY));
+    fill_window(x, y, background_color);
 }
 
-void ST7789_Add_Window(
-    uint8_t idx,
-    Offsets window_offsets, 
-    uint32_t color,
-    uint32_t bkg,
-    uint8_t rim_w
-){
-    GPIO_ResetBits(GPIOD, DC);
-    SD_LowSpeed();
-    ST7789_SetWindow(window_offsets.offsetX, 
-        window_offsets.offsetY, 
-        window_offsets.offsetX1-1, 
-        window_offsets.offsetY1-1);
-    SD_HighSpeed();
-    GPIO_SetBits(GPIOD, DC);
-    uint16_t w = window_offsets.offsetX1-window_offsets.offsetX;
-    uint16_t h = window_offsets.offsetY1-window_offsets.offsetY;
-    for (uint32_t pix = 0; pix < w*h; pix++){
-        while (!(SPI1->STATR & SPI_I2S_FLAG_TXE));
-        SPI1->DATAR =  color >> 8;
-        while (!(SPI1->STATR & SPI_I2S_FLAG_TXE));
-        SPI1->DATAR = color & 0xFF;
-    }
-    while (SPI_I2S_GetFlagStatus(SPI1, SPI_I2S_FLAG_BSY));
+void ST7789_Add_Window(uint8_t idx, Offsets off, uint32_t color, uint32_t bkg, uint8_t rim) {
+    set_window(off.offsetX, off.offsetY, off.offsetX1 - 1, off.offsetY1 - 1);
+    fill_window(off.offsetX1 - off.offsetX, off.offsetY1 - off.offsetY, (uint16_t)color);
 
-    SD_LowSpeed();
-    ST7789_SetWindow(window_offsets.offsetX+rim_w, 
-        window_offsets.offsetY+rim_w, 
-        window_offsets.offsetX1-1-rim_w, 
-        window_offsets.offsetY1-1-rim_w);
-    SD_HighSpeed();
-    GPIO_SetBits(GPIOD, DC);
-    uint16_t w1 = window_offsets.offsetX1-window_offsets.offsetX;
-    uint16_t h1 = window_offsets.offsetY1-window_offsets.offsetY;
-    for (uint32_t pix = 0; pix < w1*h1; pix++){
-        while (!(SPI1->STATR & SPI_I2S_FLAG_TXE));
-        SPI1->DATAR =  bkg >> 8;
-        while (!(SPI1->STATR & SPI_I2S_FLAG_TXE));
-        SPI1->DATAR = bkg & 0xFF;
-    }
-    while (SPI_I2S_GetFlagStatus(SPI1, SPI_I2S_FLAG_BSY));
+    set_window(off.offsetX + rim, off.offsetY + rim,
+                          off.offsetX1 - 1 - rim, off.offsetY1 - 1 - rim);
+    fill_window(off.offsetX1 - off.offsetX - 2 * rim,
+                off.offsetY1 - off.offsetY - 2 * rim, (uint16_t)bkg);
 
-    windows[idx].window_offsets.offsetX = window_offsets.offsetX;
-    windows[idx].window_offsets.offsetY = window_offsets.offsetY;
-    windows[idx].window_offsets.offsetX1 = window_offsets.offsetX1;
-    windows[idx].window_offsets.offsetY1 = window_offsets.offsetY1;
-    windows[idx].bkg = bkg;
-    windows[idx].col = color;
+    windows[idx].window_offsets = off;
+    windows[idx].bkg = (uint16_t)bkg;
+    windows[idx].col = (uint16_t)color;
 }
 
-void ST7789_SetOrienaionAndFormat(uint8_t orienation, uint8_t format){
+void ST7789_SetOrienaionAndFormat(uint8_t orientation, uint8_t format) {
     ST7789_WriteCmd(0x36);
-    ST7789_WriteData(orienation | format);
+    ST7789_WriteData(orientation | format);
 }
 
-void ST7789_InsertText(uint8_t idx, char* text, uint32_t color, uint8_t offset, Font font){
-    GPIO_ResetBits(GPIOD, DC);
-    SD_LowSpeed();
-    ST7789_SetWindow(windows[idx].window_offsets.offsetX+offset, 
-        windows[idx].window_offsets.offsetY+offset, 
-        windows[idx].window_offsets.offsetX1-1-offset, 
-        windows[idx].window_offsets.offsetY1-1-offset);
-    SD_HighSpeed();
-    GPIO_SetBits(GPIOD, DC);
-    uint16_t w = windows[idx].window_offsets.offsetX1 - windows[idx].window_offsets.offsetX - offset*2;
-    uint16_t h = windows[idx].window_offsets.offsetY1 - windows[idx].window_offsets.offsetY - offset*2;
+void ST7789_InsertText(uint8_t idx, char *text, uint32_t color, uint8_t offset, Font font) {
+    Window *win = &windows[idx];
+    uint16_t inner_w = win->window_offsets.offsetX1 - win->window_offsets.offsetX - 2 * offset;
+    uint16_t inner_h = win->window_offsets.offsetY1 - win->window_offsets.offsetY - 2 * offset;
 
-    uint16_t len = 0;
-    while(text[len]) len++;
-    uint16_t max_len_in_line = w/font.weight;
-    uint16_t max_len = h/font.height;
-    uint16_t text_lines = len>=max_len_in_line ? len/max_len_in_line+1 : 1;
-    uint16_t current_line = 0;
+    uint16_t len = strlen(text);
+    uint16_t chars_per_line = inner_w / font.weight;
+    uint16_t max_lines = inner_h / font.height;
+    uint16_t lines = (len > chars_per_line) ? (len / chars_per_line + 1) : 1;
 
-    printf("%d\n", len);
-    printf("%d\n", max_len_in_line);
-    printf("%d\n", text_lines);
+    win->config.offset = offset;
+    win->config.color = (uint16_t)color;
+    win->config.font = font;
 
-    windows[idx].config = (TextConfig){
-        .offset = offset,
-        .color = color,
-        .font = font
-    };
-    uint16_t size = max_len>len ? max_len*2 : len*2;
-    windows[idx].text = (char*)malloc(size);
-    memset(windows[idx].text, (char)32, size);
-    strcpy(windows[idx].text, text);
+    size_t alloc = (max_lines > len) ? (max_lines * 2) : (len * 2);
+    win->text = (char *)malloc(alloc);
+    memset(win->text, ' ', alloc);
+    strcpy(win->text, text);
 
-    for (uint16_t line_p = 0; line_p < text_lines*font.height; line_p++){
-        current_line = line_p/font.height;
-        for (uint16_t pix = 0; pix < w; pix++) {
-            uint8_t char_in_line = pix/font.weight;
-            uint8_t pix_in_char = pix%font.weight;
-            char symbol_idx = windows[idx].text[char_in_line+(current_line*max_len_in_line)]-32;
-            uint16_t data;
-            switch(font.idx)
-            {
-                case 0: data = (uint16_t)(font5x8[symbol_idx][pix_in_char] >> line_p%font.height);
-                    break;
-                case 1: data = font9x16[symbol_idx][pix_in_char] >> line_p%font.height;
-                    break;
-                case 2: data = font11x16[symbol_idx][pix_in_char] >> line_p%font.height;
-                    break;
-                default:
-                    return;
-            }
+    set_window(win->window_offsets.offsetX + offset,
+                          win->window_offsets.offsetY + offset,
+                          win->window_offsets.offsetX1 - 1 - offset,
+                          win->window_offsets.offsetY1 - 1 - offset);
 
-            if ((data & 1) &&
-                (char_in_line < len) &&
-                (char_in_line < max_len_in_line)
-            ){
-                while (!(SPI1->STATR & SPI_I2S_FLAG_TXE));
-                SPI1->DATAR =  color >> 8;
-                while (!(SPI1->STATR & SPI_I2S_FLAG_TXE));
-                SPI1->DATAR = color & 0xFF;
-            } else {    
-                while (!(SPI1->STATR & SPI_I2S_FLAG_TXE));
-                SPI1->DATAR =  windows[idx].bkg >> 8;
-                while (!(SPI1->STATR & SPI_I2S_FLAG_TXE));
-                SPI1->DATAR = windows[idx].bkg & 0xFF;
-            }
+    for (uint16_t row = 0; row < lines * font.height; row++) {
+        uint16_t line = row / font.height;
+        for (uint16_t col = 0; col < inner_w; col++) {
+            uint8_t ch = col / font.weight;
+            uint8_t pix_in_ch = col % font.weight;
+            char sym = win->text[ch + line * chars_per_line] - 32;
+            uint16_t data = get_font_pixel(font.idx, sym, pix_in_ch, row);
+
+            if ((data & 1) && (ch < len) && (ch < chars_per_line))
+                spi_send_color(win->config.color);
+            else
+                spi_send_color(win->bkg);
         }
     }
-    while (SPI_I2S_GetFlagStatus(SPI1, SPI_I2S_FLAG_BSY));
+    SPI_BUSY_WAIT();
 }
 
-void ST7789_ScrollText(uint8_t idx, uint16_t pos){
-    GPIO_ResetBits(GPIOD, DC);
-    SD_LowSpeed();
-    ST7789_SetWindow(windows[idx].window_offsets.offsetX+windows[idx].config.offset, 
-        windows[idx].window_offsets.offsetY+windows[idx].config.offset, 
-        windows[idx].window_offsets.offsetX1-1-windows[idx].config.offset, 
-        windows[idx].window_offsets.offsetY1-1-windows[idx].config.offset);
-    SD_HighSpeed();
-    GPIO_SetBits(GPIOD, DC);
-    uint16_t w = windows[idx].window_offsets.offsetX1 - windows[idx].window_offsets.offsetX - windows[idx].config.offset*2;
-    // uint16_t h = windows[idx].window_offsets.offsetY1 - windows[idx].window_offsets.offsetY - windows[idx].config.offset*2;
-    
-    uint16_t len = 0;
-    while(windows[idx].text[len]) len++;
-    Font font = windows[idx].config.font;
-    uint16_t max_len_in_line = w/font.weight;
-    uint16_t text_lines = len>=max_len_in_line ? len/max_len_in_line+1 : 1;
-    uint16_t current_line = 0;
+void ST7789_ScrollText(uint8_t idx, uint16_t pos) {
+    Window *win = &windows[idx];
+    uint16_t inner_w = win->window_offsets.offsetX1 - win->window_offsets.offsetX - 2 * win->config.offset;
 
-    for (uint16_t line_p = 0; line_p < text_lines*font.height; line_p++){
-        current_line = line_p/font.height+pos;
-        for (uint16_t pix = 0; pix < w; pix++) {
-            uint8_t char_in_line = pix/font.weight;
-            uint8_t pix_in_char = pix%font.weight;
-            char symbol_idx = windows[idx].text[char_in_line+(current_line*max_len_in_line)]-32;
-            uint16_t data;
-            switch(font.idx){
-                case 0: data = (uint16_t)(font5x8[symbol_idx][pix_in_char] >> line_p%font.height);
-                    break;
-                case 1: data = font9x16[symbol_idx][pix_in_char] >> line_p%font.height;
-                    break;
-                case 2: data = font11x16[symbol_idx][pix_in_char] >> line_p%font.height;
-                    break;
-                default:
-                    return;
-            }
+    uint16_t len = strlen(win->text);
+    Font font = win->config.font;
+    uint16_t chars_per_line = inner_w / font.weight;
+    uint16_t lines = (len > chars_per_line) ? (len / chars_per_line + 1) : 1;
 
-            if ((data & 1) &&
-                (char_in_line < len) &&
-                (char_in_line < max_len_in_line)
-            ){
-                while (!(SPI1->STATR & SPI_I2S_FLAG_TXE));
-                SPI1->DATAR = windows[idx].config.color >> 8;
-                while (!(SPI1->STATR & SPI_I2S_FLAG_TXE));
-                SPI1->DATAR = windows[idx].config.color & 0xFF;
-            } else {    
-                while (!(SPI1->STATR & SPI_I2S_FLAG_TXE));
-                SPI1->DATAR =  windows[idx].bkg >> 8;
-                while (!(SPI1->STATR & SPI_I2S_FLAG_TXE));
-                SPI1->DATAR = windows[idx].bkg & 0xFF;
-            }
+    set_window(win->window_offsets.offsetX + win->config.offset,
+                          win->window_offsets.offsetY + win->config.offset,
+                          win->window_offsets.offsetX1 - 1 - win->config.offset,
+                          win->window_offsets.offsetY1 - 1 - win->config.offset);
+
+    for (uint16_t row = 0; row < lines * font.height; row++) {
+        uint16_t line = row / font.height + pos;
+        for (uint16_t col = 0; col < inner_w; col++) {
+            uint8_t ch = col / font.weight;
+            uint8_t pix_in_ch = col % font.weight;
+            char sym = win->text[ch + line * chars_per_line] - 32;
+            uint16_t data = get_font_pixel(font.idx, sym, pix_in_ch, row);
+
+            if ((data & 1) && (ch < len) && (ch < chars_per_line))
+                spi_send_color(win->config.color);
+            else
+                spi_send_color(win->bkg);
         }
     }
-    while (SPI_I2S_GetFlagStatus(SPI1, SPI_I2S_FLAG_BSY));
+    SPI_BUSY_WAIT();
 }
 
-void ST7789_ChangeText(uint8_t idx, char* text){
-    GPIO_ResetBits(GPIOD, DC);
-    SD_LowSpeed();
-    ST7789_SetWindow(windows[idx].window_offsets.offsetX+windows[idx].config.offset, 
-        windows[idx].window_offsets.offsetY+windows[idx].config.offset, 
-        windows[idx].window_offsets.offsetX1-1-windows[idx].config.offset, 
-        windows[idx].window_offsets.offsetY1-1-windows[idx].config.offset);
-    SD_HighSpeed();
-    GPIO_SetBits(GPIOD, DC);
-    uint16_t w = windows[idx].window_offsets.offsetX1 - windows[idx].window_offsets.offsetX - 
-        windows[idx].config.offset*2;
-    uint16_t h = windows[idx].window_offsets.offsetY1 - windows[idx].window_offsets.offsetY - 
-        windows[idx].config.offset*2;
+void ST7789_ChangeText(uint8_t idx, char *text) {
+    Window *win = &windows[idx];
+    uint16_t inner_w = win->window_offsets.offsetX1 - win->window_offsets.offsetX - 2 * win->config.offset;
+    uint16_t inner_h = win->window_offsets.offsetY1 - win->window_offsets.offsetY - 2 * win->config.offset;
 
-    uint16_t len = 0;
-    while(text[len]) len++;
-    uint16_t max_len_in_line = w/windows[idx].config.font.weight;
-    uint16_t max_len = h/windows[idx].config.font.height;
-    uint16_t text_lines = len>=max_len_in_line ? len/max_len_in_line+1 : 1;
-    uint16_t current_line = 0;
-    uint16_t size = max_len>len ? max_len*2 : len*2;
-    free(windows[idx].text);
-    windows[idx].text = (char*)malloc(size);
-    memset(windows[idx].text, (char)32, size);
-    strcpy(windows[idx].text, text);
+    uint16_t len = strlen(text);
+    uint16_t chars_per_line = inner_w / win->config.font.weight;
+    uint16_t max_lines = inner_h / win->config.font.height;
+    uint16_t lines = (len > chars_per_line) ? (len / chars_per_line + 1) : 1;
 
-    for (uint16_t line_p = 0; line_p < max_len*windows[idx].config.font.height; line_p++){
-        current_line = line_p/windows[idx].config.font.height;
-        for (uint16_t pix = 0; pix < w; pix++) {
-            uint8_t char_in_line = pix/windows[idx].config.font.weight;
-            uint8_t pix_in_char = pix%windows[idx].config.font.weight;
-            char symbol_idx = windows[idx].text[char_in_line+(current_line*max_len_in_line)]-32;
-            uint16_t data;
-            switch(windows[idx].config.font.idx)
-            {
-                case 0: data = (uint16_t)(font5x8[symbol_idx][pix_in_char] >> line_p%windows[idx].config.font.height);
-                    break;
-                case 1: data = font9x16[symbol_idx][pix_in_char] >> line_p%windows[idx].config.font.height;
-                    break;
-                case 2: data = font11x16[symbol_idx][pix_in_char] >> line_p%windows[idx].config.font.height;
-                    break;
-                default:
-                    return;
-            }
+    size_t alloc = (max_lines > len) ? (max_lines * 2) : (len * 2);
+    free(win->text);
+    win->text = (char *)malloc(alloc);
+    memset(win->text, ' ', alloc);
+    strcpy(win->text, text);
 
-            if ((data & 1) &&
-                (char_in_line < len) &&
-                (char_in_line < max_len_in_line) && 
-                (current_line < text_lines)
-            ){
-                while (!(SPI1->STATR & SPI_I2S_FLAG_TXE));
-                SPI1->DATAR =  windows[idx].config.color >> 8;
-                while (!(SPI1->STATR & SPI_I2S_FLAG_TXE));
-                SPI1->DATAR = windows[idx].config.color & 0xFF;
-            } else {    
-                while (!(SPI1->STATR & SPI_I2S_FLAG_TXE));
-                SPI1->DATAR =  windows[idx].bkg >> 8;
-                while (!(SPI1->STATR & SPI_I2S_FLAG_TXE));
-                SPI1->DATAR = windows[idx].bkg & 0xFF;
-            }
+    set_window(win->window_offsets.offsetX + win->config.offset,
+                          win->window_offsets.offsetY + win->config.offset,
+                          win->window_offsets.offsetX1 - 1 - win->config.offset,
+                          win->window_offsets.offsetY1 - 1 - win->config.offset);
+
+    for (uint16_t row = 0; row < max_lines * win->config.font.height; row++) {
+        uint16_t line = row / win->config.font.height;
+        for (uint16_t col = 0; col < inner_w; col++) {
+            uint8_t ch = col / win->config.font.weight;
+            uint8_t pix_in_ch = col % win->config.font.weight;
+            char sym = win->text[ch + line * chars_per_line] - 32;
+            uint16_t data = get_font_pixel(win->config.font.idx, sym, pix_in_ch, row);
+
+            if ((data & 1) && (ch < len) && (ch < chars_per_line) && (line < lines))
+                spi_send_color(win->config.color);
+            else
+                spi_send_color(win->bkg);
         }
     }
-    while (SPI_I2S_GetFlagStatus(SPI1, SPI_I2S_FLAG_BSY));
+    SPI_BUSY_WAIT();
 }
 
-void ST7789_RemoveWindow(uint8_t idx){
-    GPIO_ResetBits(GPIOD, DC);
-    SD_LowSpeed();
-    ST7789_SetWindow(windows[idx].window_offsets.offsetX, windows[idx].window_offsets.offsetY, 
-        windows[idx].window_offsets.offsetX1, windows[idx].window_offsets.offsetY1);
-    SD_HighSpeed();
-    GPIO_SetBits(GPIOD, DC);
-    uint16_t w = windows[idx].window_offsets.offsetX1-windows[idx].window_offsets.offsetX;
-    uint16_t h = windows[idx].window_offsets.offsetY1-windows[idx].window_offsets.offsetY;
-
-    free(windows[idx].text);
-
-    for(uint32_t i = 0; i < w*h; i++)
-    {
-        while (!(SPI1->STATR & SPI_I2S_FLAG_TXE));
-        SPI1->DATAR =  background_color >> 8;
-        while (!(SPI1->STATR & SPI_I2S_FLAG_TXE));
-        SPI1->DATAR = background_color & 0xFF;
-    }
-
-    while (SPI_I2S_GetFlagStatus(SPI1, SPI_I2S_FLAG_BSY));   
+void ST7789_RemoveWindow(uint8_t idx) {
+    Window *win = &windows[idx];
+    set_window(win->window_offsets.offsetX, win->window_offsets.offsetY,
+                          win->window_offsets.offsetX1, win->window_offsets.offsetY1);
+    fill_window(win->window_offsets.offsetX1 - win->window_offsets.offsetX,
+                win->window_offsets.offsetY1 - win->window_offsets.offsetY,
+                background_color);
+    free(win->text);
 }

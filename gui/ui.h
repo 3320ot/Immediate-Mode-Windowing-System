@@ -7,7 +7,7 @@
 
 #define MAX_WINDOWS      20
 
-static uint32_t background_color = 0x2472;
+static const uint32_t background_color = 0x2472;
 
 typedef struct {
     uint16_t offsetX;
