@@ -1,5 +1,10 @@
-#ifndef ui_h
-#define ui_h
+#ifndef gui_h
+#define gui_h
+
+#include "ch32v00x.h"
+#include "ST7789/ST7789.h"
+#include "ST7789/spi.h"
+#include "adc.h"
 
 #include "fonts/font5x8.h"
 #include "fonts/font9x16.h"
@@ -7,7 +12,7 @@
 
 #define MAX_WINDOWS      20
 
-static const uint32_t background_color = 0x2472;
+static const uint32_t background_color = 0x0690;
 
 typedef struct {
     uint16_t offsetX;
@@ -34,6 +39,7 @@ typedef struct {
     uint32_t col;
     char *text;
     TextConfig config;
+    uint8_t rim;
 } Window;
 
 static const Font FONT5x8 = {
@@ -51,6 +57,10 @@ static const Font FONT11x16 = {
     .height = 16,
     .idx = 2 
 };
+
+void ST7789_EnableGraph(uint8_t idx);
+
+void ST7789_UpdateGraph(uint8_t idx);
 
 void ST7789_InsertText(uint8_t idx, char* text, uint32_t color, uint8_t offset, Font font);
 

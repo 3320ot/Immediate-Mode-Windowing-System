@@ -5,7 +5,7 @@ void SD_LowSpeed()
 {
     SPI_Cmd(SPI1, DISABLE);
     SPI1->CTLR1 &= 0xFFC7;
-    SPI1->CTLR1 |= SPI_BaudRatePrescaler_128;
+    SPI1->CTLR1 |= SPI_BaudRatePrescaler_64;
     SPI_Cmd(SPI1, ENABLE);
 }
 
@@ -59,8 +59,6 @@ void SPI1_Init()
     Delay_Ms(10);
     GPIO_SetBits(GPIOC, RES);
     Delay_Ms(150);
-
-//    SPI_TransferByte(0xff);
 }
 
 void SPI1_SetSpeed(uint8_t SPI_BaudRatePrescaler)

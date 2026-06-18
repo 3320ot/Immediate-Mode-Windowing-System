@@ -3,7 +3,7 @@
 // ===================================================================================
 // 2023 by Stefan Wagner:   https://github.com/wagiminator
 
-#include "i2c_tx.h"
+#include <i2c/i2c_tx.h>
 
 // Set system clock frequency
 #ifndef F_CPU

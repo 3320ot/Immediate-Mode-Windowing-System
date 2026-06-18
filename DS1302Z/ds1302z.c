@@ -164,13 +164,4 @@ void DS1302_Init(){
 //    Time t = DS1302_GetTime();
     DS1302_WriteReg(7, 0x00);
     DS1302_WriteReg(0, 0x00);
-//    while(1){
-//        t = DS1302_GetTime();
-//        const char* weekdays[] = {"Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"};
-//            printf("%02d:%02d:%02d %s %02d.%02d.20%02d\n",
-//                   t.hour, t.minute, t.second,
-//                   weekdays[t.weekday - 1],
-//                   t.day, t.month, t.year);
-//        Delay_Ms(1000);
-//    }
 }

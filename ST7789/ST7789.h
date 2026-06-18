@@ -11,8 +11,8 @@
 #define RGB              0x00
 #define BGR              0x08
 
-#define x                240
-#define y                240
+#define RESOLUTION_X     240
+#define RESOLUTION_Y     240
 
 extern uint32_t buffer[BUFFER_SIZE];
 

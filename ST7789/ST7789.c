@@ -180,7 +180,7 @@ const uint32_t txe_mask = SPI_I2S_FLAG_TXE;
 void ST7789_Init(){
     SPI1_Init();
     ST7789_SetConfig();
-    ST7789_SetWindow(0, 0, x-1, y-1);
+    ST7789_SetWindow(0, 0, RESOLUTION_X-1, RESOLUTION_Y-1);
     ST7789_BLK_Init();
     SD_HighSpeed();
 }
