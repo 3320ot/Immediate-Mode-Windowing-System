@@ -2,19 +2,32 @@
 #include "ST7789.h"
 #include "spi.h"
 
-void ST7789_BLK_Init() {
+uint8_t counter = 0;
+uint16_t GPIOD_Data;
+
+void ST7789_BlkButton_Init() {
     RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOD | RCC_APB2Periph_AFIO, ENABLE);
     RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM2, ENABLE);
+    RCC_AHBPeriphClockCmd(RCC_AHBPeriph_DMA1, ENABLE);
 
     GPIO_InitTypeDef GPIO_InitStructure = {0};
+    TIM_OCInitTypeDef TIM_OCInitStructure = {0};
+    TIM_TimeBaseInitTypeDef TIM_TimeBaseInitStructure = {0};
+
     GPIO_InitStructure.GPIO_Pin = BGR;
     GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF_PP;
     GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
     GPIO_Init(GPIOD, &GPIO_InitStructure);
 
+    GPIO_InitStructure.GPIO_Pin = BUTTON1 |
+            BUTTON2 |
+            BUTTON3 |
+            BUTTON4;
+    GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IPU;
+    GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
+    GPIO_Init(GPIOD, &GPIO_InitStructure);
+
     TIM_Cmd(TIM2, DISABLE);
-    TIM_OCInitTypeDef TIM_OCInitStructure = {0};
-    TIM_TimeBaseInitTypeDef TIM_TimeBaseInitStructure = {0};
 
     TIM_TimeBaseInitStructure.TIM_Period = 999;
     TIM_TimeBaseInitStructure.TIM_Prescaler = 47;
@@ -32,7 +45,22 @@ void ST7789_BLK_Init() {
     TIM_CCxCmd(TIM2, TIM_Channel_2, TIM_CCx_Enable);
     TIM_OC2PreloadConfig(TIM2, TIM_OCPreload_Enable);
     TIM_ARRPreloadConfig(TIM2, ENABLE);
+    TIM_ITConfig(TIM2, TIM_IT_Update, ENABLE);
     TIM_Cmd(TIM2, ENABLE);
+    NVIC_EnableIRQ(TIM2_IRQn);
+}
+
+void TIM2_IRQHandler(void) __attribute__((interrupt("WCH-Interrupt-fast")));
+void TIM2_IRQHandler(void) {
+    if (TIM2->INTFR & TIM_UIF) {
+        TIM2->INTFR &= ~TIM_UIF;
+        if (counter < 50) {
+            counter++;
+        } else {
+            counter=0;
+            GPIOD_Data = GPIO_ReadInputData(GPIOD);
+        };
+    }
 }
 
 void ST7789_SetBrightness(uint16_t brightness){
@@ -181,6 +209,6 @@ void ST7789_Init(){
     SPI1_Init();
     ST7789_SetConfig();
     ST7789_SetWindow(0, 0, RESOLUTION_X-1, RESOLUTION_Y-1);
-    ST7789_BLK_Init();
+    ST7789_BlkButton_Init();
     SD_HighSpeed();
 }

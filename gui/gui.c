@@ -81,28 +81,51 @@ void ST7789_UpdateGraph(uint8_t idx){
 
     const uint16_t half_buffer = ADC_BUFFER_SIZE / 2;
     const uint16_t bg_color = win->bkg;
-    const uint16_t line_color = 0xFFFF;
+    const uint16_t line_color_ch1 = 0xe81d;
+    const uint16_t line_color_ch2 = 0xef20;
+
+    uint32_t scale = ((uint32_t)half_buffer << 16) / inner_w;
 
     for (uint16_t y = inner_h; y > 0; --y) {
-        uint16_t y_prev = 0;
+        uint16_t y_prev1 = 0;
+        uint16_t y_prev2 = 0;
+
         for (uint16_t x = 0; x < inner_w; ++x) {
-            uint16_t index = (x * half_buffer) / inner_w;
-            uint16_t value = adc_buffer[index * 2];
-            uint16_t y_curr = (inner_h * value) >> 10;
+            uint16_t index = (uint16_t)(((uint32_t)x * scale) >> 16);
+            if (index >= half_buffer) index = half_buffer - 1;
+
+            uint16_t value1 = adc_buffer[index * 2];
+            uint16_t value2 = adc_buffer[index * 2 + 1];
+
+            uint16_t y_curr1 = ((inner_h * value1) >> 10) + 1;
+            uint16_t y_curr2 = ((inner_h * value2) >> 10) + 1;
 
             uint16_t color = bg_color;
-            if (y == y_curr) {
-                color = line_color;
-            }
-            if (x > 0) {
-                uint16_t y_min = (y_prev < y_curr) ? y_prev : y_curr;
-                uint16_t y_max = (y_prev > y_curr) ? y_prev : y_curr;
-                if (y >= y_min && y <= y_max) {
-                    color = line_color;
+
+            if (y == y_curr1) {
+                color = line_color_ch1;
+            } else if (x > 0) {
+                uint16_t y_min1 = (y_prev1 < y_curr1) ? y_prev1 : y_curr1;
+                uint16_t y_max1 = (y_prev1 > y_curr1) ? y_prev1 : y_curr1;
+                if (y >= y_min1 && y <= y_max1) {
+                    color = line_color_ch1;
                 }
             }
+
+            if (y == y_curr2) {
+                color = line_color_ch2;
+            } else if (x > 0) {
+                uint16_t y_min2 = (y_prev2 < y_curr2) ? y_prev2 : y_curr2;
+                uint16_t y_max2 = (y_prev2 > y_curr2) ? y_prev2 : y_curr2;
+                if (y >= y_min2 && y <= y_max2) {
+                    color = line_color_ch2;
+                }
+            }
+
             spi_send_color(color);
-            y_prev = y_curr;
+
+            y_prev1 = y_curr1;
+            y_prev2 = y_curr2;
         }
     }
     SPI_BUSY_WAIT();

@@ -3,6 +3,13 @@
 #include "ST7789/ST7789.h"
 #include "DS1302Z/ds1302z.h"
 
+void printBinary(uint16_t num) {
+    for (int i = sizeof(uint16_t) * 8 - 1; i >= 0; i--) {
+        printf("%d", (num >> i) & 1);
+    }
+    printf("\n");
+}
+
 int main(void){
     NVIC_PriorityGroupConfig(NVIC_PriorityGroup_1);
     SystemCoreClockUpdate();
@@ -54,6 +61,11 @@ int main(void){
         sprintf(buffer, "%02d:%02d:%02d",
                 t.hour, t.minute, t.second);
         ST7789_ChangeText(2, buffer);
+
+        printf("GPIOD: ");
+        printBinary(GPIOD_Data);
+        printf("\n");
+
 
         if (adc_update_pending) {
             ST7789_UpdateGraph(3);

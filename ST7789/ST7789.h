@@ -14,7 +14,13 @@
 #define RESOLUTION_X     240
 #define RESOLUTION_Y     240
 
+#define BUTTON1          GPIO_Pin_4
+#define BUTTON2          GPIO_Pin_5
+#define BUTTON3          GPIO_Pin_6
+#define BUTTON4          GPIO_Pin_7 //NRST Pin Ignore Yet
+
 extern uint32_t buffer[BUFFER_SIZE];
+extern uint16_t GPIOD_Data;
 
 void ST7789_WriteCmd(uint8_t cmd);
 
