@@ -1,7 +1,7 @@
 #ifndef gui_h
 #define gui_h
 
-#include "ch32v00x.h"
+#include "ch32v20x.h"
 #include "ST7789/ST7789.h"
 #include "ST7789/spi.h"
 #include "adc.h"

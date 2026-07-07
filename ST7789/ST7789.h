@@ -4,15 +4,15 @@
 #define THRESHOLD_BITS   76800UL
 #define BUFFER_SIZE      40
 
-#define VERTICAL         0x00
+#define VERTICAL         0x40
 #define HORIZONTAL       0x60
-#define VERICAL_inv      0xC0
-#define HORIZONTAL_inv   0xA0 
+#define VERTICAL_inv     0xC0
+#define HORIZONTAL_inv   0xA0
 #define RGB              0x00
 #define BGR              0x08
 
-#define RESOLUTION_X     240
-#define RESOLUTION_Y     240
+#define RESOLUTION_X     320
+#define RESOLUTION_Y     480
 
 #define BUTTON1          GPIO_Pin_4
 #define BUTTON2          GPIO_Pin_5
@@ -20,7 +20,7 @@
 #define BUTTON4          GPIO_Pin_7 //NRST Pin Ignore Yet
 
 extern uint32_t buffer[BUFFER_SIZE];
-extern uint16_t GPIOD_Data;
+extern uint16_t GPIOB_Data;
 
 void ST7789_WriteCmd(uint8_t cmd);
 

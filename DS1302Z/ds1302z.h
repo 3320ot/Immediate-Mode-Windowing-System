@@ -1,11 +1,11 @@
 #ifndef ds1302z_h
 #define ds1302z_h
 
-#include "ch32v00x.h"
+#include "ch32v20x.h"
 
-#define CLK_CLK     GPIO_Pin_4
-#define CLK_IO      GPIO_Pin_3
-#define CLK_RES     GPIO_Pin_0
+#define CLK_CLK     GPIO_Pin_13
+#define CLK_IO      GPIO_Pin_14
+#define CLK_RES     GPIO_Pin_15
 
 typedef struct {
     uint8_t year;

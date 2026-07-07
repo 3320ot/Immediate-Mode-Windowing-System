@@ -1,7 +1,7 @@
 #ifndef adc_h
 #define adc_h
 
-#include "ch32v00x.h"
+#include "ch32v20x.h"
 #include "gui.h"
 
 #define ADC_BUFFER_SIZE 128

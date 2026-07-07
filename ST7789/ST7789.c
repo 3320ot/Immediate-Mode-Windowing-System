@@ -1,9 +1,9 @@
-#include "ch32v00x.h"
+#include "ch32v20x.h"
 #include "ST7789.h"
 #include "spi.h"
 
 uint8_t counter = 0;
-uint16_t GPIOD_Data;
+uint16_t GPIOB_Data;
 
 void ST7789_BlkButton_Init() {
     RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOD | RCC_APB2Periph_AFIO, ENABLE);
@@ -58,7 +58,7 @@ void TIM2_IRQHandler(void) {
             counter++;
         } else {
             counter=0;
-            GPIOD_Data = GPIO_ReadInputData(GPIOD);
+            GPIOB_Data = GPIO_ReadInputData(GPIOB);
         };
     }
 }
@@ -71,14 +71,14 @@ void ST7789_SetBrightness(uint16_t brightness){
 }
 
 void ST7789_WriteCmd(uint8_t cmd) {
-    GPIOD->BCR = DC;
+    GPIOB->BCR = DC;
     while (!SPI_I2S_GetFlagStatus(SPI1, SPI_I2S_FLAG_TXE));
     SPI_I2S_SendData(SPI1, cmd);
     while (SPI_I2S_GetFlagStatus(SPI1, SPI_I2S_FLAG_BSY));
 }
 
 void ST7789_WriteData(uint8_t data) {
-    GPIO_SetBits(GPIOD, DC);
+    GPIO_SetBits(GPIOB, DC);
     while (!SPI_I2S_GetFlagStatus(SPI1, SPI_I2S_FLAG_TXE));
     SPI_I2S_SendData(SPI1, data);
     while (SPI_I2S_GetFlagStatus(SPI1, SPI_I2S_FLAG_BSY));
@@ -87,78 +87,76 @@ void ST7789_WriteData(uint8_t data) {
 void ST7789_SetConfig(){
     ST7789_WriteCmd(0x01); Delay_Ms(150);  // Soft Reset
     ST7789_WriteCmd(0x11); Delay_Ms(150);  // Sleep Out
-    ST7789_WriteCmd(0x21);                 // INVON
-    ST7789_WriteCmd(0x13); Delay_Ms(10);   // NORON
+    ST7789_WriteCmd(0x20);                 // INVON
 
-    ST7789_WriteCmd(0x36); 
-    ST7789_WriteData(RGB | VERTICAL); // RGB
-    ST7789_WriteCmd(0x3A); ST7789_WriteData(0x05); // COLMOD
+    ST7789_WriteCmd(0x3A);
+    ST7789_WriteData(0x55);
 
-    ST7789_WriteCmd(0xB2);  // Porch setting
-    ST7789_WriteData(0x0C);
-    ST7789_WriteData(0x0C);
+    ST7789_WriteCmd(0x36);
+    ST7789_WriteData(BGR | VERTICAL);
+
+    ST7789_WriteCmd(0xB0);
     ST7789_WriteData(0x00);
-    ST7789_WriteData(0x33);
-    ST7789_WriteData(0x33);
 
-    ST7789_WriteCmd(0xB7);  // Gate control
-    ST7789_WriteData(0x35);
-
-    ST7789_WriteCmd(0xBB);  // VCOM
-    ST7789_WriteData(0x19);
-
-    ST7789_WriteCmd(0xC0);  // LCM control
-    ST7789_WriteData(0x2C);
-
-    ST7789_WriteCmd(0xC2);  // VDV and VRH command enable
-    ST7789_WriteData(0x01);
-
-    ST7789_WriteCmd(0xC3);  // VRH set
-    ST7789_WriteData(0x12);
-
-    ST7789_WriteCmd(0xC4);  // VDV set
-    ST7789_WriteData(0x20);
-
-    ST7789_WriteCmd(0xC6);  // Frame rate control
-    ST7789_WriteData(0x0F);
-
-    ST7789_WriteCmd(0xD0);  // Power control
-    ST7789_WriteData(0xA4);
-    ST7789_WriteData(0xA1);
-
-    ST7789_WriteCmd(0xE0);  // Positive gamma
-    ST7789_WriteData(0xD0);
-    ST7789_WriteData(0x04);
-    ST7789_WriteData(0x0D);
-    ST7789_WriteData(0x11);
-    ST7789_WriteData(0x13);
-    ST7789_WriteData(0x2B);
-    ST7789_WriteData(0x3F);
-    ST7789_WriteData(0x54);
-    ST7789_WriteData(0x4C);
-    ST7789_WriteData(0x18);
-    ST7789_WriteData(0x0D);
+    ST7789_WriteCmd(0xB1);
+    ST7789_WriteData(0xC0);
     ST7789_WriteData(0x0B);
-    ST7789_WriteData(0x1F);
-    ST7789_WriteData(0x23);
 
-    ST7789_WriteCmd(0xE1);  // Negative gamma
-    ST7789_WriteData(0xD0);
-    ST7789_WriteData(0x04);
-    ST7789_WriteData(0x0C);
-    ST7789_WriteData(0x11);
-    ST7789_WriteData(0x13);
-    ST7789_WriteData(0x2C);
-    ST7789_WriteData(0x3F);
-    ST7789_WriteData(0x44);
-    ST7789_WriteData(0x51);
-    ST7789_WriteData(0x2F);
-    ST7789_WriteData(0x1F);
-    ST7789_WriteData(0x1F);
-    ST7789_WriteData(0x20);
-    ST7789_WriteData(0x23);
+    ST7789_WriteCmd(0xB4);
+    ST7789_WriteData(0x02);
 
-    ST7789_WriteCmd(0x29);  // Display on
+    ST7789_WriteCmd(0xB6);
+    ST7789_WriteData(0x02);
+    ST7789_WriteData(0x02);
+    ST7789_WriteData(0x3B);
+
+    ST7789_WriteCmd(0xB7);
+    ST7789_WriteData(0xC6);
+
+    ST7789_WriteCmd(0xC0);
+    ST7789_WriteData(0x10);
+    ST7789_WriteData(0x10);
+
+    ST7789_WriteCmd(0xC1);
+    ST7789_WriteData(0x41);
+
+    ST7789_WriteCmd(0xC5);
+    ST7789_WriteData(0x00);
+    ST7789_WriteData(0x28);
+
+    ST7789_WriteCmd(0xE0);
+    ST7789_WriteData(0x0F);
+    ST7789_WriteData(0x18);
+    ST7789_WriteData(0x16);
+    ST7789_WriteData(0x0B);
+    ST7789_WriteData(0x10);
+    ST7789_WriteData(0x07);
+    ST7789_WriteData(0x06);
+    ST7789_WriteData(0x07);
+    ST7789_WriteData(0x06);
+    ST7789_WriteData(0x1F);
+    ST7789_WriteData(0x1C);
+    ST7789_WriteData(0x1E);
+    ST7789_WriteData(0x27);
+    ST7789_WriteData(0x32);
+
+    ST7789_WriteCmd(0xE1);
+    ST7789_WriteData(0x0F);
+    ST7789_WriteData(0x18);
+    ST7789_WriteData(0x16);
+    ST7789_WriteData(0x0B);
+    ST7789_WriteData(0x10);
+    ST7789_WriteData(0x07);
+    ST7789_WriteData(0x06);
+    ST7789_WriteData(0x07);
+    ST7789_WriteData(0x06);
+    ST7789_WriteData(0x1F);
+    ST7789_WriteData(0x1C);
+    ST7789_WriteData(0x1E);
+    ST7789_WriteData(0x27);
+    ST7789_WriteData(0x32);
+
+    ST7789_WriteCmd(0x29);
     Delay_Ms(50);
 }
 
@@ -197,7 +195,7 @@ void sendBuffer(){
 }
 
 void updateScreen(){
-    GPIO_SetBits(GPIOD, DC);
+    GPIO_SetBits(GPIOB, DC);
     while (SPI_I2S_GetFlagStatus(SPI1, SPI_I2S_FLAG_BSY));
 }
 
@@ -209,6 +207,6 @@ void ST7789_Init(){
     SPI1_Init();
     ST7789_SetConfig();
     ST7789_SetWindow(0, 0, RESOLUTION_X-1, RESOLUTION_Y-1);
-    ST7789_BlkButton_Init();
+//    ST7789_BlkButton_Init();
     SD_HighSpeed();
 }

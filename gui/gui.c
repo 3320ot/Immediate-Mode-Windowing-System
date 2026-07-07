@@ -21,11 +21,11 @@ static void fill_window(uint16_t w, uint16_t h, uint16_t color) {
 }
 
 static void set_window(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1) {
-    GPIO_ResetBits(GPIOD, DC);
+    GPIO_ResetBits(GPIOB, DC);
     SD_LowSpeed();
     ST7789_SetWindow(x0, y0, x1, y1);
     SD_HighSpeed();
-    GPIO_SetBits(GPIOD, DC);
+    GPIO_SetBits(GPIOB, DC);
 }
 
 static uint16_t get_font_pixel(uint8_t font_idx, uint8_t sym, uint8_t col, uint8_t row) {
@@ -38,12 +38,12 @@ static uint16_t get_font_pixel(uint8_t font_idx, uint8_t sym, uint8_t col, uint8
 }
 
 void ST7789_FillQuickTest(uint32_t color) {
-    GPIO_SetBits(GPIOD, DC);
+    GPIO_SetBits(GPIOB, DC);
     fill_window(RESOLUTION_X, RESOLUTION_Y, (uint16_t)color);
 }
 
 void ST7789_Clear(void) {
-    GPIO_SetBits(GPIOD, DC);
+    GPIO_SetBits(GPIOB, DC);
     fill_window(RESOLUTION_X, RESOLUTION_Y, background_color);
 }
 

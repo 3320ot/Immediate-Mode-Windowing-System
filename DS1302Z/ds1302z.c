@@ -3,32 +3,26 @@
 GPIO_InitTypeDef GPIO_InitStructure = {0};
 
 void DS1302_GpioInit(){
-    RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOC | 
-        RCC_APB2Periph_GPIOD,
+    RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOC,
         ENABLE);
 
-    GPIO_InitStructure.GPIO_Pin = CLK_IO | CLK_CLK;
+    GPIO_InitStructure.GPIO_Pin = CLK_IO | CLK_CLK | CLK_RES;
     GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;
-    GPIO_InitStructure.GPIO_Speed = GPIO_Speed_30MHz;
+    GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
     GPIO_Init(GPIOC, &GPIO_InitStructure);
-
-    GPIO_InitStructure.GPIO_Pin = CLK_RES;
-    GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;
-    GPIO_InitStructure.GPIO_Speed = GPIO_Speed_30MHz;
-    GPIO_Init(GPIOD, &GPIO_InitStructure);
 }
 
 void DS1302_ReadMode(){
     GPIO_InitStructure.GPIO_Pin = CLK_IO;
     GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN_FLOATING;
-    GPIO_InitStructure.GPIO_Speed = GPIO_Speed_30MHz;
+    GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
     GPIO_Init(GPIOC, &GPIO_InitStructure);
 }
 
 void DS1302_WriteMode(){
     GPIO_InitStructure.GPIO_Pin = CLK_IO;
     GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;
-    GPIO_InitStructure.GPIO_Speed = GPIO_Speed_30MHz;
+    GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
     GPIO_Init(GPIOC, &GPIO_InitStructure);
 }
 
@@ -69,33 +63,29 @@ uint8_t DS1302_ReadByte(void) {
 
 void DS1302_WriteReg(uint8_t addr, uint8_t data) {
     uint8_t cmd = 0x80 | (addr << 1);
-    GPIO_ResetBits(GPIOD, CLK_RES);
-    GPIO_ResetBits(GPIOC, CLK_CLK);
+    GPIO_ResetBits(GPIOC, CLK_CLK | CLK_RES);
     Delay_Ms(2);
 
-    GPIO_SetBits(GPIOD, CLK_RES);
+    GPIO_SetBits(GPIOC, CLK_RES);
     Delay_Ms(2);
 
     DS1302_WriteByte(cmd);
     DS1302_WriteByte(data);
-    GPIO_ResetBits(GPIOC, CLK_CLK);
-    GPIO_ResetBits(GPIOD, CLK_RES);
+    GPIO_ResetBits(GPIOC, CLK_CLK | CLK_RES);
 }
 
 uint8_t DS1302_ReadReg(uint8_t addr) {
     uint8_t cmd = 0x81 | (addr << 1);
     uint8_t data;
-    GPIO_ResetBits(GPIOD, CLK_RES);
-    GPIO_ResetBits(GPIOC, CLK_CLK);
+    GPIO_ResetBits(GPIOC, CLK_CLK | CLK_RES);
     Delay_Ms(1);
 
-    GPIO_SetBits(GPIOD, CLK_RES);
+    GPIO_SetBits(GPIOC, CLK_RES);
     Delay_Ms(1);
 
     DS1302_WriteByte(cmd);
     data = DS1302_ReadByte();
-    GPIO_ResetBits(GPIOC, CLK_CLK);
-    GPIO_ResetBits(GPIOD, CLK_RES);
+    GPIO_ResetBits(GPIOC, CLK_CLK | CLK_RES);
     return data;
 }
 
